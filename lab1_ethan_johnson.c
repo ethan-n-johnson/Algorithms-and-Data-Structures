@@ -1,72 +1,76 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct{
-    int value;
-    int initial_position;
-} Pair;
-
-// Print the array
-void print_array(Pair *array, int length){
-    for (int i = 0; i < length; i++){
-        printf("%d ", array[i].value);
-        printf("%d\n", array[i].initial_position);
-    }
-    printf("\n");
+void print_header()
+{
+    printf("Make a selection:\n");
+    printf("0: Terminate execution\n");
+    printf("1: Print the counters in ascending index value order\n");
+    printf("2: Print the counters in ascending counter value order\n");
+    printf("3: Add one to the counter indexed by i\n");
+    printf("4: Subtract one from the counter indexed by i\n");
+    printf("5: Determine the number of counters whose values are no smaller than i and no larger than j\n");
+    printf("> ");
 }
-
-// Compares two pair elements based on their value for use in Qsort
-int comp_value(const void* elem1, const void* elem2){
-    Pair *pair1 = (Pair *)elem1;
-    Pair *pair2 = (Pair *)elem2;
-    if (pair1->initial_position == pair2->initial_position) return pair1->initial_position - pair2->initial_position;
-    else return pair1->value - pair2->value;
-}
-// Compares two pair elements based on their postition for use in Qsort
-int comp_position(const void* elem1, const void* elem2){
-    Pair *pair1 = (Pair *)elem1;
-    Pair *pair2 = (Pair *)elem2;
-    return pair1->initial_position - pair2->initial_position;
-}
-
-// Keep only the last occurence of a duplicate
-int remove_dupe(Pair* array, int length){
-    int new_length = length;
-    Pair temp;
-    for (int i = 0; i < length; i++) {
-        if (array[i].value == array[i+1].value){
-            array[i] = array[i+1];
-            temp = array[length-i];
-            new_length--;
-        }
-    }
-    return new_length;
-}
-
 int main(){
-    int array_length;
-    printf("Enter the size of the array: ");
-    scanf("%d", &array_length);
-    Pair array[array_length];
+    int n, selection;
+    printf("Enter the size of the map: ");
+    scanf("%d", &n);
+    int *map = (int *)malloc(n*sizeof(int));
+    int *index = (int *)malloc(n*sizeof(int));
+    int *count = (int *)malloc(n*sizeof(int));
     printf("\n");
-    // scan in the values for the array
-    for (int i = 0; i < array_length; i++){
-        scanf("%d", &array[i].value);
-        array[i].initial_position = i;
+    // Fill the map index and count arrays
+    for (int i = 0; i < n; i++){
+        map[i] = i;
+        index[i] = i;
+        count[i] = 0;
     }
-    printf("\n");
-    printf("Before Sorting:\n");
-    print_array(array, array_length);
-
-    qsort(array, array_length, sizeof(Pair), comp_value);
-    printf("After Sorting:\n");
-    print_array(array, array_length);
-
-    int new_length = remove_dupe(array, array_length); // Implement dupe removal
-    printf("Remove Extras:\n");
-    print_array(array, new_length);
-
-    // qsort(array, new_length, sizeof(Pair), comp_position);
-    // printf("After Sorting:\n");
-    // print_array(array, new_length);
+    do
+    {
+        int i, j = 0;
+        print_header();
+        scanf("%d", &selection);
+        switch (selection)
+        {
+        case 0:
+            // Exit
+            break;
+        case 1:
+            // Ascending index
+            for (int i = 0; i < n; i++)
+            {
+                printf("%d %d\n", i, count[map[i]]);
+            }
+            break;
+        case 2:
+            // Ascending counter
+            for (int i = 0; i < n; i++)
+            {
+                printf("%d %d\n", index[i], count[i]);
+            }
+            break;
+        case 3:
+            printf("Enter an index: ");
+            scanf("%d", &i);
+            // add one to the counter indexed by i
+            break;
+        case 4:
+            printf("Enter an index: ");
+            scanf("%d", &i);
+            // subtract one to the counter indexed by i
+            break;
+        case 5:
+            printf("Enter top and bottom bounds (i j): ");
+            scanf("%d %d", &i, &j);
+            // determine the number of counters whose values are no smaller than i and no larger than j
+            break;
+        default:
+            break;
+        }
+    } while (selection != 0);
+    
+    free(map);
+    free(index);
+    free(count);
 }
