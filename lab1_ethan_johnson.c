@@ -1,3 +1,6 @@
+// Ethan Johnson
+// ID: 1002008374
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -69,7 +72,7 @@ int main(){
             break;
         }
     } while (selection != 0);
-    
+
     free(map);
     free(index);
     free(count);
