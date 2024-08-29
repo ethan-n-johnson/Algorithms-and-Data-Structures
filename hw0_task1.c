@@ -52,17 +52,6 @@ int binSearchLast(int *a, int n, int key)
   return high;
 }
 
-void print_header()
-{
-  printf("Make a selection:\n");
-  printf("0: Terminate execution\n");
-  printf("1: Print the counters in ascending index value order\n");
-  printf("2: Print the counters in ascending counter value order\n");
-  printf("3: Add one to the counter indexed by i\n");
-  printf("4: Subtract one from the counter indexed by i\n");
-  printf("5: Determine the number of counters whose values are no smaller than i and no larger than j\n");
-  printf("> ");
-}
 int main()
 {
   int n;
@@ -83,7 +72,6 @@ int main()
   int temp_count_i, temp_index_i, temp_map_i, temp_count_key, temp_index_key, temp_map_key = 0;
   do
   {
-    print_header();
     scanf("%d", &selection);
     switch (selection)
     {
@@ -92,24 +80,24 @@ int main()
       break;
     case 1:
       // Ascending index
+      printf("print by index\n");
       for (i = 0; i < n; i++)
-        printf("%d %d Map: %d\n", i, count[map[i]], map[i]);
+        printf("%d %d\n", i, count[map[i]]);
+      printf("-------\n");
       break;
     case 2:
       // Ascending counter
+      printf("print by count\n");
       for (i = 0; i < n; i++)
-        printf("%d %d Map: %d\n", index[i], count[i], map[i]);
+        printf("%d %d\n", index[i], count[i]);
+      printf("-------\n");
       break;
     case 3:
-      // Add one to the counter indexed by i
-      // Reorder the arrays
-      printf("Enter an index: ");
       scanf("%d", &i);
       key = binSearchLast(count, n, count[map[i]]);
+      // Add one to the counter indexed by i
       count[map[i]]++;
-      // printf("key = %d\n", key);
-      // printf("map[i] = %d\n", map[i]);
-      // printf("Swap %d with %d", map[i], map[key]);
+      // Reorder the arrays
       temp_index_i = index[map[i]];
       temp_count_i = count[map[i]];
       temp_map_i = map[i];
@@ -127,13 +115,38 @@ int main()
       map[temp_index_key] = temp_map_i;
       break;
     case 4:
-      printf("Enter an index: ");
       scanf("%d", &i);
-      // subtract one to the counter indexed by i
+      key = binSearchFirst(count, n, count[map[i]]);
+      // Subtract one to the counter indexed by i
+      count[map[i]]--;
+      // Reorder the arrays
+      temp_index_i = index[map[i]];
+      temp_count_i = count[map[i]];
+      temp_map_i = map[i];
+      temp_index_key = index[key];
+      temp_count_key = count[key];
+      temp_map_key = map[index[key]];
+
+      index[temp_map_i] = index[key];
+      index[key] = temp_index_i;
+
+      count[temp_map_i] = count[key];
+      count[key] = temp_count_i;
+
+      map[i] = map[temp_index_key];
+      map[temp_index_key] = temp_map_i;
       break;
     case 5:
-      printf("Enter top and bottom bounds (i j): ");
-      scanf("%d %d", &top, &bottom);
+      scanf("%d %d", &bottom, &top);
+      int higher = binSearchLast(count, n, top);
+      int lower = binSearchFirst(count, n, bottom);
+      if (lower == -1)
+      {
+        lower = 0;
+      }
+      int in_range = higher-lower+1;
+      printf("%d counters valued between %d and %d\n",in_range, top, bottom);
+      
       // determine the number of counters whose values are no smaller than i and no larger than j
       break;
     default:
