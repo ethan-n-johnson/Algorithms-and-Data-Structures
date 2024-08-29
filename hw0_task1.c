@@ -79,7 +79,8 @@ int main()
     index[i] = i;
     count[i] = 0;
   }
-  int i, key, top, bottom, temp = 0;
+  int i, key, top, bottom = 0;
+  int temp_count_i, temp_index_i, temp_map_i, temp_count_key, temp_index_key, temp_map_key = 0;
   do
   {
     print_header();
@@ -92,12 +93,12 @@ int main()
     case 1:
       // Ascending index
       for (i = 0; i < n; i++)
-        printf("%d %d\n", i, count[map[i]]);
+        printf("%d %d Map: %d\n", i, count[map[i]], map[i]);
       break;
     case 2:
       // Ascending counter
       for (i = 0; i < n; i++)
-        printf("%d %d\n", index[i], count[i]);
+        printf("%d %d Map: %d\n", index[i], count[i], map[i]);
       break;
     case 3:
       // Add one to the counter indexed by i
@@ -106,20 +107,24 @@ int main()
       scanf("%d", &i);
       key = binSearchLast(count, n, count[map[i]]);
       count[map[i]]++;
-      printf("key = %d\n", key);
-      printf("map[i] = %d\n", map[i]);
-      printf("Swap %d with %d", map[i], map[key]);
-      temp = index[map[i]];
-      index[map[i]] = index[key];
-      index[key] = temp;
+      // printf("key = %d\n", key);
+      // printf("map[i] = %d\n", map[i]);
+      // printf("Swap %d with %d", map[i], map[key]);
+      temp_index_i = index[map[i]];
+      temp_count_i = count[map[i]];
+      temp_map_i = map[i];
+      temp_index_key = index[key];
+      temp_count_key = count[key];
+      temp_map_key = map[index[key]];
 
-      temp = count[map[i]];
-      count[map[i]] = count[key];
-      count[key] = temp;
+      index[temp_map_i] = index[key];
+      index[key] = temp_index_i;
 
-      temp = map[i];
-      map[i] = map[key];
-      map[key] = temp;
+      count[temp_map_i] = count[key];
+      count[key] = temp_count_i;
+
+      map[i] = map[temp_index_key];
+      map[temp_index_key] = temp_map_i;
       break;
     case 4:
       printf("Enter an index: ");
