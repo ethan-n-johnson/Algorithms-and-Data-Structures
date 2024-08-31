@@ -1,6 +1,6 @@
 // Ethan Johnson
 // ID: 1002008374
-
+// command used to compile your code on Omega (NOT YET DONE)
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -79,14 +79,14 @@ int main()
       // Exit
       break;
     case 1:
-      // Ascending index
+      // Print by ascending index
       printf("print by index\n");
       for (i = 0; i < n; i++)
         printf("%d %d\n", i, count[map[i]]);
       printf("-------\n");
       break;
     case 2:
-      // Ascending counter
+      // Print by ascending counter
       printf("print by count\n");
       for (i = 0; i < n; i++)
         printf("%d %d\n", index[i], count[i]);
@@ -136,7 +136,9 @@ int main()
       map[i] = map[temp_index_key];
       map[temp_index_key] = temp_map_i;
       break;
+
     case 5:
+      // Determine the number of counters whose values are no smaller than i and no larger than j
       scanf("%d %d", &bottom, &top);
       int higher = binSearchLast(count, n, top);
       int lower = binSearchFirst(count, n, bottom);
@@ -144,10 +146,8 @@ int main()
       {
         lower = 0;
       }
-      int in_range = higher-lower+1;
-      printf("%d counters valued between %d and %d\n",in_range, top, bottom);
-      
-      // determine the number of counters whose values are no smaller than i and no larger than j
+      int in_range = higher - lower + 1;
+      printf("%d counters valued between %d and %d\n", in_range, top, bottom);
       break;
     default:
       break;
