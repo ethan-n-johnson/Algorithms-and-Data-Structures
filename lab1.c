@@ -1,6 +1,6 @@
 // Ethan Johnson
 // ID: 1002008374
-// gcc lab1.c
+// gcc lab1.c -std=c99
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -142,12 +142,8 @@ int main()
       scanf("%d %d", &bottom, &top);
       int higher = binSearchLast(count, n, top);
       int lower = binSearchFirst(count, n, bottom);
-      if (lower == -1)
-      {
-        lower = 0;
-      }
       int in_range = higher - lower + 1;
-      printf("%d counters valued between %d and %d\n", in_range, top, bottom);
+      printf("%d counters valued between %d and %d\n", in_range, bottom, top);
       break;
     default:
       break;
