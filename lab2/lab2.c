@@ -141,8 +141,13 @@ void maxHeapChange(int k)
 
 int main()
 {
-
     // From Heap sort code
+    // Read the first string from each file into a heap
+    // Remove the first string from the heap and increase the counter
+    // Read in another string from the file into the heap
+    // Table of heap indexes (file numbers)
+    // Use the heap index to access the correct file from the array
+    // The only duplicates that occur are from different files
     int n, m, op, i, val, file_count;
     char file_name[100];
     FILE* in_file;
