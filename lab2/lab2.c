@@ -2,6 +2,10 @@
 // ID: 1002008374
 // gcc
 
+// The following heap sort code has been changed to 
+// support minheaps instead of maxheaps. So the names
+// of all of the functions have been changed.
+
 // For heap sort code
 // index-heap-based priority queue.  heap routines are
 // from "Algorithms in C, Third Edition", and
@@ -14,13 +18,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef int Item;
+typedef char* Item;
 
 int N,         // Number of items in queue
     *pq,       // Priority queue
     *qp,       // Table of handles (for tracking)
     maxQueued; // Capacity of priority queue
-int *a;
+char **a;
 
 int parent(int i)
 {
@@ -49,7 +53,9 @@ void exch(int i, int j)
     qp[pq[j]] = j;
 }
 
-void maxHeapInit(int *items, int n, int m)
+// Changed in maxheapInit to minHeapInit
+// Changed int *items to char *items[] to support strings
+void minHeapInit(char *items[], int n, int m)
 {
     int i;
 
@@ -73,12 +79,14 @@ void maxHeapInit(int *items, int n, int m)
         qp[i] = (-1);
 }
 
-int maxHeapEmpty()
+// Function name changed to minheapEmpty
+int minHeapEmpty()
 {
     return !N;
 }
 
-int maxHeapFull()
+// Function name changed to minheapFull
+int minHeapFull()
 {
     return N == maxQueued;
 }
@@ -86,7 +94,8 @@ int maxHeapFull()
 int less(int i, int j)
 {
     // Notice how heap entries reference a[]
-    return a[pq[i]] < a[pq[j]];
+    // Changed the return to support strings as the priority
+    return strcmp(a[pq[i]], a[pq[j]]) > 0;
 }
 
 void heapIncreaseKey(int *pq, int k) // AKA swim
@@ -98,41 +107,47 @@ void heapIncreaseKey(int *pq, int k) // AKA swim
     }
 }
 
-void maxHeapify(int *pq, int k, int N) // AKA sink
+// Slight changes to support min heap instead of max heap
+void minHeapify(int *pq, int k, int N) // AKA sink
 {
     int j;
 
     while (left(k) <= N)
     {
         j = left(k);
-        if (j < N && less(j, j + 1))
+        // Changed j, j+1 to j+1, j
+        if (j < N && less(j + 1, j))
             j = right(k);
-        if (!less(k, j))
+        // Changed !less(k, j) to !less(j, k)
+        if (!less(j, k))
             break;
         exch(k, j);
         k = j;
     }
 }
 
-void maxHeapInsert(int k)
+// Function name changed to minHeapInsert
+void minHeapInsert(int k)
 {
     qp[k] = ++N;
     pq[N] = k;
     heapIncreaseKey(pq, N);
 }
 
-int heapExtractMax()
+// Function name changed to heapExtractMin
+int heapExtractMin()
 {
     exch(1, N);
-    maxHeapify(pq, 1, --N);
+    minHeapify(pq, 1, --N);
     qp[pq[N + 1]] = (-1); // Set to unused
     return pq[N + 1];
 }
 
-void maxHeapChange(int k)
+// Function name changed to minHeapChange
+void minHeapChange(int k)
 { // To be called when priority[k] has changed.
     heapIncreaseKey(pq, qp[k]);
-    maxHeapify(pq, qp[k], N);
+    minHeapify(pq, qp[k], N);
 }
 
 // Test driver for index-heap-based priority queue.
@@ -174,6 +189,7 @@ int main()
             printf("Error opening file: %s\n", file_name);
         }
     }
+    fopen("out.dat", "w+");
 
     // Close the in.dat file
     fclose(in_file);
