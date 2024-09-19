@@ -17,90 +17,80 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-typedef char* Item;
+typedef struct {
+    FILE* fp;
+    char* current_string;
+} FileInfo;
 
-int N,         // Number of items in queue
-    *pq,       // Priority queue
-    *qp,       // Table of handles (for tracking)
-    maxQueued; // Capacity of priority queue
-char **a;
+typedef struct {
+    char *string;
+    int file_index;
+} HeapNode;
 
-int parent(int i)
-{
-    return i / 2;
+HeapNode* heap;
+FileInfo* files;
+int N,          // Number of items in queue
+    *pq,        // Priority queue
+    *qp,        // Table of handles (for tracking)
+    maxQueued,  // Capacity of priority queue
+    file_count; // Number of files
+int *a;
+
+int parent(int i){
+    return (i-1)/2;
 }
-
-int left(int i)
-{
-    return 2 * i;
-}
-
-int right(int i)
-{
+int left(int i) {
     return 2 * i + 1;
 }
 
-void exch(int i, int j)
-{
-    // Swaps parent with child in heap
-    int t;
+int right(int i) {
+    return 2 * i + 2;
+}
 
-    t = pq[i];
-    pq[i] = pq[j];
-    pq[j] = t;
-    qp[pq[i]] = i;
-    qp[pq[j]] = j;
+void exch(int i, int j) {
+    HeapNode temp = heap[i];
+    heap[i] = heap[j];
+    heap[j] = temp;
+    qp[heap[i].file_index] = i;
+    qp[heap[j].file_index] = j;
 }
 
 // Changed in maxheapInit to minHeapInit
 // Changed int *items to char *items[] to support strings
-void minHeapInit(char *items[], int n, int m)
+void minHeapInit()
 {
-    int i;
-
-    a = items; // Save reference to index table
-    maxQueued = m;
+    maxQueued = file_count;
     N = 0;
+    heap = malloc(maxQueued * sizeof(HeapNode));
     pq = (int *)malloc((maxQueued + 1) * sizeof(int)); // Contains subscripts to a[]
     if (!pq)
     {
         printf("malloc failed %d\n", __LINE__);
         exit(0);
     }
-    qp = (int *)malloc(n * sizeof(int)); // Inverse of pq, allows changing priorities
+    qp = (int *)malloc(maxQueued * sizeof(int)); // Inverse of pq, allows changing priorities
     if (!qp)
     {
         printf("malloc failed %d\n", __LINE__);
         exit(0);
     }
     // Set all handles to unused
-    for (i = 0; i < n; i++)
-        qp[i] = (-1);
-}
-
-// Function name changed to minheapEmpty
-int minHeapEmpty()
-{
-    return !N;
-}
-
-// Function name changed to minheapFull
-int minHeapFull()
-{
-    return N == maxQueued;
+    for (int i = 0; i < maxQueued; i++) {
+        qp[i] = -1;
+    }
 }
 
 int less(int i, int j)
 {
-    // Notice how heap entries reference a[]
     // Changed the return to support strings as the priority
-    return strcmp(a[pq[i]], a[pq[j]]) > 0;
+    return strcmp(heap[i].string, heap[j].string) > 0;
 }
 
-void heapIncreaseKey(int *pq, int k) // AKA swim
+void heapIncreaseKey(int k) // AKA swim
 {
-    while (k > 1 && less(parent(k), k))
+    while (k > 0 && less(parent(k), k))
     {
         exch(k, parent(k));
         k = parent(k);
@@ -108,182 +98,152 @@ void heapIncreaseKey(int *pq, int k) // AKA swim
 }
 
 // Slight changes to support min heap instead of max heap
-void minHeapify(int *pq, int k, int N) // AKA sink
+void minHeapify(int k) // AKA sink
 {
+    int min = k;
     int j;
 
-    while (left(k) <= N)
+    j = left(k);
+    if (j < N && less(j, k)) min = j;
+    j = right(k);
+    if (j < N && less(j, k)) min = j;
+    if (min != k)
     {
-        j = left(k);
-        // Changed j, j+1 to j+1, j
-        if (j < N && less(j + 1, j))
-            j = right(k);
-        // Changed !less(k, j) to !less(j, k)
-        if (!less(j, k))
-            break;
-        exch(k, j);
-        k = j;
+        exch(k, min);
+        minHeapify(min);
     }
 }
 
 // Function name changed to minHeapInsert
 void minHeapInsert(int k)
 {
-    qp[k] = ++N;
+    if (N == maxQueued) {
+        maxQueued *= 2;
+        heap = realloc(heap, maxQueued * sizeof(HeapNode));
+        pq = realloc(pq, (maxQueued + 1) * sizeof(int));
+        qp = realloc(qp, maxQueued * sizeof(int));
+    }
     pq[N] = k;
-    heapIncreaseKey(pq, N);
+    qp[k] = N;
+    heap[N].string = files[k].current_string;
+    heap[N].file_index = k;
+    heapIncreaseKey(N);
+    N++;
 }
 
 // Function name changed to heapExtractMin
-int heapExtractMin()
+HeapNode heapExtractMin()
 {
-    exch(1, N);
-    minHeapify(pq, 1, --N);
-    qp[pq[N + 1]] = (-1); // Set to unused
-    return pq[N + 1];
+    HeapNode root = heap[0];
+    if (N > 1)
+    {
+        heap[0] = heap[N-1];
+        qp[heap[0].file_index] = 0;
+        minHeapify(0);
+    }
+    N--;
+    return root;
 }
 
 // Function name changed to minHeapChange
 void minHeapChange(int k)
 { // To be called when priority[k] has changed.
-    heapIncreaseKey(pq, qp[k]);
-    minHeapify(pq, qp[k], N);
+    heapIncreaseKey(qp[k]);
+    minHeapify(qp[k]);
 }
 
 // Test driver for index-heap-based priority queue.
 // Index is just a table of priorities whose
 // subscripts are used in the PQ.
 
-int main()
-{
-    // From Heap sort code
-    // Read the first string from each file into a heap
-    // Remove the first string from the heap and increase the counter
-    // Read in another string from the file into the heap
-    // Table of heap indexes (file numbers)
-    // Use the heap index to access the correct file from the array
-    // The only duplicates that occur are from different files
-    int n, m, op, i, val, file_count;
+int main() {
     char file_name[100];
-    FILE* in_file;
+    FILE *in_file, *out_file;
 
     in_file = fopen("in.dat", "r");
-    if (in_file == NULL)
-    {
-        printf("error opening in.dat\n Exiting...");
+    out_file = fopen("out.dat", "w");
+    if (in_file == NULL || out_file == NULL) {
+        printf("Error opening files\n");
         return 1;
     }
 
     // Read the number of files from in.dat
     fscanf(in_file, "%d", &file_count);
 
-    // Initialize the array of pointers to files
-    FILE* value_files[file_count];
+    // Allocate memory for files and heap structures
+    files = (FileInfo*)malloc(file_count * sizeof(FileInfo));
+    if (!files) {
+        printf("Memory allocation failed for files\n");
+        return 1;
+    }
+
+    minHeapInit();
 
     // Open all the files listed in in.dat
-    for (int i = 0; i < file_count; i++)
-    {
+    for (int i = 0; i < file_count; i++) {
         fscanf(in_file, "%s", file_name);
-        value_files[i] = fopen(file_name, "r");
-        if (value_files[i] == NULL) {
+        files[i].fp = fopen(file_name, "r");
+        if (files[i].fp == NULL) {
             printf("Error opening file: %s\n", file_name);
+            continue; // Proceed to the next file
+        }
+        files[i].current_string = (char*)malloc(51 * sizeof(char)); // +1 for null terminator
+        if (!files[i].current_string) {
+            printf("Memory allocation failed for current_string[%d]\n", i);
+            return 1;
+        }
+        if (fscanf(files[i].fp, "%50s", files[i].current_string) == 1) {
+            minHeapInsert(i);
+        } else {
+            free(files[i].current_string);
+            files[i].current_string = NULL;
         }
     }
-    fopen("out.dat", "w+");
-
     // Close the in.dat file
     fclose(in_file);
-    
-//     int *priority;
 
-//     printf("Enter table (dictionary) size\n");
-//     scanf("%d", &n);
-//     if (n < 1)
-//     {
-//         printf("Illegal size %d\n", __LINE__);
-//         exit(0);
-//     }
-//     priority = (int *)malloc(n * sizeof(int));
-//     if (!priority)
-//     {
-//         printf("malloc failed for table %d\n", __LINE__);
-//         exit(0);
-//     }
-//     printf("Your table has keys %d through %d\n", 0, n - 1);
-//     printf("Enter PQ (binary heap) size\n");
-//     scanf("%d", &m);
+    char* last_string = NULL;
+    int count = 0;
 
-//     maxHeapInit(priority, n, m);
+    while (N > 0) {
+        HeapNode min_node = heapExtractMin();
+        if (last_string == NULL || strcmp(min_node.string, last_string) != 0) {
+            if (last_string) {
+                printf("%s %d\n", last_string, count);
+                fprintf(out_file, "%s %d\n", last_string, count);
+                fflush(out_file); 
+                free(last_string);
+            }
+            last_string = strdup(min_node.string);
+            printf("%s", last_string);
+            count = 1;
+        } else {
+            count++;
+        }
 
-//     for (i = 0; i < n; i++)
-//         priority[i] = (-1);
-
-//     while (1)
-//     {
-//         printf("----table (priority) active entries----\n");
-//         for (i = 0; i < n; i++)
-//             printf("%d %d\n", i, priority[i]);
-//         printf("----heap (pq)-----\n");
-//         for (i = 1; i <= N; i++)
-//             printf("%d %d\n", i, pq[i]);
-//         printf("----handles (qp)-----\n");
-//         for (i = 0; i < n; i++)
-//             printf("%d %d\n", i, qp[i]);
-
-//         printf("Enter operation (<0 to quit, # of table item, >%d for heapExtractMax)\n", n - 1);
-//         scanf("%d", &op);
-//         if (op < 0)
-//             break;
-//         if (op >= n)
-//             if (maxHeapEmpty())
-//                 printf("Can't do heapExtractMax() when pq is empty\n");
-//             else
-//             {
-//                 i = heapExtractMax();
-//                 printf("heapExtractMax() indicates priority[%d]=%d\n", i, priority[i]);
-//                 priority[i] = (-1);
-//             }
-//         else
-//         {
-//             if (priority[op] < 0)
-//             {
-//                 if (maxHeapFull())
-//                     printf("pq already full\n");
-//                 else
-//                 {
-//                     val = (-1);
-//                     while (val < 0)
-//                     {
-//                         printf("Enter non-negative priority to maxHeapInsert() at table slot %d\n",
-//                                op);
-//                         scanf("%d", &val);
-//                     }
-//                     priority[op] = val;
-//                     maxHeapInsert(op);
-//                 }
-//             }
-//             else
-//             {
-//                 val = (-1);
-//                 while (val < 0)
-//                 {
-//                     printf("Enter non-negative priority for maxHeapChange() of table slot %d\n",
-//                            op);
-//                     scanf("%d", &val);
-//                 }
-//                 priority[op] = val;
-//                 maxHeapChange(op);
-//             }
-//         }
-//     }
-    // Close all the value files
-    for (int i = 0; i < file_count; i++)
-    {
-        if (value_files[i] != NULL) {
-            fclose(value_files[i]);
+        if (fscanf(files[min_node.file_index].fp, "%50s", files[min_node.file_index].current_string) == 1) {
+            minHeapChange(min_node.file_index);
+        } else {
+            fclose(files[min_node.file_index].fp);
+            free(files[min_node.file_index].current_string);
+            qp[min_node.file_index] = -1;
         }
     }
-//     free(priority);
-//     free(pq);
-//     free(qp);
+
+    if (last_string) {
+        fprintf(out_file, "%s %d\n", last_string, count);
+        free(last_string);
+    }
+
+    fclose(out_file);
+    // Free allocated memory
+    for (int i = 0; i < file_count; i++) {
+        free(files[i].current_string);
+    }
+    free(heap);
+    free(pq);
+    free(qp);
+    free(files);
+
+    return 0;
 }
