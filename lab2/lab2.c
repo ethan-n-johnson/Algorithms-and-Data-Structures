@@ -4,7 +4,8 @@
 
 // The following heap sort code has been changed to 
 // support minheaps instead of maxheaps. So the names
-// of all of the functions have been changed.
+// of all of the functions have been changed. As well
+// as some of their implementations.
 
 // For heap sort code
 // index-heap-based priority queue.  heap routines are
@@ -19,231 +20,209 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct {
-    FILE* fp;
-    char* current_string;
-} FileInfo;
+#define MAX_STRING_LENGTH 50
+#define MAX_FILES 100
+#define MAX_FILENAME_LENGTH 50
 
 typedef struct {
-    char *string;
-    int file_index;
-} HeapNode;
+    char *str;
+    int fileIndex;
+} Item;
 
-HeapNode* heap;
-FileInfo* files;
 int N,          // Number of items in queue
     *pq,        // Priority queue
     *qp,        // Table of handles (for tracking)
-    maxQueued,  // Capacity of priority queue
-    file_count; // Number of files
-int *a;
+    minQueued;  // Capacity of priority queue
+Item *a;
+FILE **files;
+int file_count;
 
-int parent(int i){
-    return (i-1)/2;
+int parent(int i) {
+    return i / 2;
 }
+
 int left(int i) {
-    return 2 * i + 1;
+    return 2 * i;
 }
 
 int right(int i) {
-    return 2 * i + 2;
+    return 2 * i + 1;
 }
 
 void exch(int i, int j) {
-    HeapNode temp = heap[i];
-    heap[i] = heap[j];
-    heap[j] = temp;
-    qp[heap[i].file_index] = i;
-    qp[heap[j].file_index] = j;
+// Swaps parent with child in heap
+    int t = pq[i];
+    pq[i] = pq[j];
+    pq[j] = t;
+    qp[pq[i]] = i;
+    qp[pq[j]] = j;
 }
 
-// Changed in maxheapInit to minHeapInit
-// Changed int *items to char *items[] to support strings
-void minHeapInit()
-{
-    maxQueued = file_count;
+void minHeapInit(Item *items, int n, int m) {
+    int i;
+
+    a = items; // Save reference to index table
+    minQueued = m;
     N = 0;
-    heap = malloc(maxQueued * sizeof(HeapNode));
-    pq = (int *)malloc((maxQueued + 1) * sizeof(int)); // Contains subscripts to a[]
+    pq = (int*)malloc((minQueued + 1) * sizeof(int)); // Contains subscripts to a[]
     if (!pq)
     {
-        printf("malloc failed %d\n", __LINE__);
+        printf("malloc failed %d\n",__LINE__);
         exit(0);
     }
-    qp = (int *)malloc(maxQueued * sizeof(int)); // Inverse of pq, allows changing priorities
-    if (!qp)
+    qp = (int*)malloc(n * sizeof(int)); // Inverse of pq, allows changing priorities
+    if(!qp)
     {
-        printf("malloc failed %d\n", __LINE__);
+        printf("malloc failed %d\n",__LINE__);
         exit(0);
     }
     // Set all handles to unused
-    for (int i = 0; i < maxQueued; i++) {
-        qp[i] = -1;
-    }
+    for (i=0;i<n;i++)
+        qp[i]=(-1);
 }
 
-int less(int i, int j)
-{
-    // Changed the return to support strings as the priority
-    return strcmp(heap[i].string, heap[j].string) > 0;
+int minHeapEmpty() {
+    return !N;
 }
 
-void heapIncreaseKey(int k) // AKA swim
+int less(int i, int j) {
+    // Notice how heap entries reference a[]
+    return strcmp(a[pq[i]].str, a[pq[j]].str) > 0;
+}
+
+void heapIncreaseKey(int *pq, int k) // AKA swim
 {
-    while (k > 0 && less(parent(k), k))
-    {
+    while (k > 1 && less(parent(k), k)) {
         exch(k, parent(k));
         k = parent(k);
     }
 }
 
-// Slight changes to support min heap instead of max heap
-void minHeapify(int k) // AKA sink
+void minHeapify(int *pq, int k, int N) // AKA sink
 {
-    int min = k;
     int j;
-
-    j = left(k);
-    if (j < N && less(j, k)) min = j;
-    j = right(k);
-    if (j < N && less(j, k)) min = j;
-    if (min != k)
-    {
-        exch(k, min);
-        minHeapify(min);
+    while (left(k) <= N) {
+        j = left(k);
+        if (j < N && less(j, j + 1))
+            j = right(k);
+        if (!less(k, j))
+            break;
+        exch(k, j);
+        k = j;
     }
 }
 
-// Function name changed to minHeapInsert
-void minHeapInsert(int k)
-{
-    if (N == maxQueued) {
-        maxQueued *= 2;
-        heap = realloc(heap, maxQueued * sizeof(HeapNode));
-        pq = realloc(pq, (maxQueued + 1) * sizeof(int));
-        qp = realloc(qp, maxQueued * sizeof(int));
-    }
+void minHeapInsert(int k) {
+    qp[k] = ++N;
     pq[N] = k;
-    qp[k] = N;
-    heap[N].string = files[k].current_string;
-    heap[N].file_index = k;
-    heapIncreaseKey(N);
-    N++;
+    heapIncreaseKey(pq, N);
 }
 
-// Function name changed to heapExtractMin
-HeapNode heapExtractMin()
-{
-    HeapNode root = heap[0];
-    if (N > 1)
-    {
-        heap[0] = heap[N-1];
-        qp[heap[0].file_index] = 0;
-        minHeapify(0);
+int heapExtractMin() {
+    exch(1, N);
+    minHeapify(pq, 1, --N);
+    qp[pq[N+1]]=(-1);  // Set to unused
+    return pq[N + 1];
+}
+
+char* readNextString(FILE *file) {
+    char *str = malloc(MAX_STRING_LENGTH * sizeof(char));
+    if (fscanf(file, "%s", str) == 1) {
+        return str;
     }
-    N--;
-    return root;
+    free(str);
+    return NULL;
 }
-
-// Function name changed to minHeapChange
-void minHeapChange(int k)
-{ // To be called when priority[k] has changed.
-    heapIncreaseKey(qp[k]);
-    minHeapify(qp[k]);
-}
-
-// Test driver for index-heap-based priority queue.
-// Index is just a table of priorities whose
-// subscripts are used in the PQ.
 
 int main() {
-    char file_name[100];
-    FILE *in_file, *out_file;
-
-    in_file = fopen("in.dat", "r");
-    out_file = fopen("out.dat", "w");
-    if (in_file == NULL || out_file == NULL) {
-        printf("Error opening files\n");
+    FILE *in_file = fopen("in.dat", "r");
+    if (!in_file) {
+        printf("Error opening info.txt\n");
         return 1;
     }
 
-    // Read the number of files from in.dat
     fscanf(in_file, "%d", &file_count);
-
-    // Allocate memory for files and heap structures
-    files = (FileInfo*)malloc(file_count * sizeof(FileInfo));
-    if (!files) {
-        printf("Memory allocation failed for files\n");
+    if (file_count <= 0 || file_count > MAX_FILES) {
+        printf("Invalid number of files\n");
+        fclose(in_file);
         return 1;
     }
+    files = malloc(file_count * sizeof(FILE*));
+    char filename[MAX_FILENAME_LENGTH];
 
-    minHeapInit();
-
-    // Open all the files listed in in.dat
     for (int i = 0; i < file_count; i++) {
-        fscanf(in_file, "%s", file_name);
-        files[i].fp = fopen(file_name, "r");
-        if (files[i].fp == NULL) {
-            printf("Error opening file: %s\n", file_name);
-            continue; // Proceed to the next file
-        }
-        files[i].current_string = (char*)malloc(51 * sizeof(char)); // +1 for null terminator
-        if (!files[i].current_string) {
-            printf("Memory allocation failed for current_string[%d]\n", i);
+        fscanf(in_file, "%s", filename);
+        files[i] = fopen(filename, "r");
+        if (!files[i]) {
+            printf("Error opening input file %s\n", filename);
+            fclose(in_file);
+            for (int j = 0; j < i; j++) {
+                fclose(files[j]);
+            }
+            free(files);
             return 1;
         }
-        if (fscanf(files[i].fp, "%50s", files[i].current_string) == 1) {
-            minHeapInsert(i);
-        } else {
-            free(files[i].current_string);
-            files[i].current_string = NULL;
-        }
     }
-    // Close the in.dat file
     fclose(in_file);
 
-    char* last_string = NULL;
+    FILE *outfp = fopen("out.dat", "w");
+    if (!outfp) {
+        printf("Error opening out.dat\n");
+        for (int i = 0; i < file_count; i++) {
+            fclose(files[i]);
+        }
+        free(files);
+        return 1;
+    }
+
+    minHeapInit(malloc(file_count * sizeof(Item)), file_count, file_count);
+
+    for (int i = 0; i < file_count; i++) {
+        char *str = readNextString(files[i]);
+        if (str) {
+            a[i].str = str;
+            a[i].fileIndex = i;
+            minHeapInsert(i);
+        }
+    }
+
+    char *prevStr = NULL;
     int count = 0;
 
-    while (N > 0) {
-        HeapNode min_node = heapExtractMin();
-        if (last_string == NULL || strcmp(min_node.string, last_string) != 0) {
-            if (last_string) {
-                printf("%s %d\n", last_string, count);
-                fprintf(out_file, "%s %d\n", last_string, count);
-                fflush(out_file); 
-                free(last_string);
+    while (!minHeapEmpty()) {
+        int index = heapExtractMin();
+        if (prevStr == NULL || strcmp(a[index].str, prevStr) != 0) {
+            if (prevStr != NULL) {
+                fprintf(outfp, "%s %d\n", prevStr, count);
+                free(prevStr);
             }
-            last_string = strdup(min_node.string);
-            printf("%s", last_string);
+            prevStr = strdup(a[index].str);
             count = 1;
         } else {
             count++;
         }
 
-        if (fscanf(files[min_node.file_index].fp, "%50s", files[min_node.file_index].current_string) == 1) {
-            minHeapChange(min_node.file_index);
-        } else {
-            fclose(files[min_node.file_index].fp);
-            free(files[min_node.file_index].current_string);
-            qp[min_node.file_index] = -1;
+        char *nextStr = readNextString(files[a[index].fileIndex]);
+        if (nextStr) {
+            free(a[index].str);
+            a[index].str = nextStr;
+            minHeapInsert(index);
         }
     }
 
-    if (last_string) {
-        fprintf(out_file, "%s %d\n", last_string, count);
-        free(last_string);
+    if (prevStr != NULL) {
+        fprintf(outfp, "%s %d\n", prevStr, count);
+        free(prevStr);
     }
 
-    fclose(out_file);
-    // Free allocated memory
     for (int i = 0; i < file_count; i++) {
-        free(files[i].current_string);
+        fclose(files[i]);
     }
-    free(heap);
+    fclose(outfp);
+    free(files);
     free(pq);
     free(qp);
-    free(files);
+    free(a);
 
     return 0;
 }
