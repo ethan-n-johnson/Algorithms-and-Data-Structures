@@ -165,8 +165,8 @@ int main() {
     }
     fclose(in_file);
 
-    FILE *outfp = fopen("out.dat", "w");
-    if (!outfp) {
+    FILE *out_file = fopen("out.dat", "w");
+    if (!out_file) {
         printf("Error opening out.dat\n");
         for (int i = 0; i < file_count; i++) {
             fclose(files[i]);
@@ -186,17 +186,17 @@ int main() {
         }
     }
 
-    char *prevStr = NULL;
+    char *string_prev = NULL;
     int count = 0;
 
     while (!minHeapEmpty()) {
         int index = heapExtractMin();
-        if (prevStr == NULL || strcmp(a[index].str, prevStr) != 0) {
-            if (prevStr != NULL) {
-                fprintf(outfp, "%s %d\n", prevStr, count);
-                free(prevStr);
+        if (string_prev == NULL || strcmp(a[index].str, string_prev) != 0) {
+            if (string_prev != NULL) {
+                fprintf(out_file, "%s %d\n", string_prev, count);
+                free(string_prev);
             }
-            prevStr = strdup(a[index].str);
+            string_prev = strdup(a[index].str);
             count = 1;
         } else {
             count++;
@@ -210,15 +210,15 @@ int main() {
         }
     }
 
-    if (prevStr != NULL) {
-        fprintf(outfp, "%s %d\n", prevStr, count);
-        free(prevStr);
+    if (string_prev != NULL) {
+        fprintf(out_file, "%s %d\n", string_prev, count);
+        free(string_prev);
     }
 
     for (int i = 0; i < file_count; i++) {
         fclose(files[i]);
     }
-    fclose(outfp);
+    fclose(out_file);
     free(files);
     free(pq);
     free(qp);
