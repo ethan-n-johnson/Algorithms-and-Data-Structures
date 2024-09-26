@@ -21,9 +21,8 @@
 #include <string.h>
 
 #define MAX_STRING_LENGTH 50
-#define MAX_FILES 100
-#define MAX_FILENAME_LENGTH 50
 
+// Struct for the string map
 typedef struct {
     char *str;
     int fileIndex;
@@ -135,6 +134,7 @@ char* readNextString(FILE *file) {
 }
 
 int main() {
+    // Try to open the infile. If it doesn't open return an error.
     FILE *in_file = fopen("in.dat", "r");
     if (!in_file) {
         printf("Error opening info.txt\n");
@@ -142,14 +142,11 @@ int main() {
     }
 
     fscanf(in_file, "%d", &file_count);
-    if (file_count <= 0 || file_count > MAX_FILES) {
-        printf("Invalid number of files\n");
-        fclose(in_file);
-        return 1;
-    }
-    files = malloc(file_count * sizeof(FILE*));
-    char filename[MAX_FILENAME_LENGTH];
 
+    files = malloc(file_count * sizeof(FILE*));
+    char filename[MAX_STRING_LENGTH];
+
+    // Try to open the input files. If one doesn't open free all files and return an error.
     for (int i = 0; i < file_count; i++) {
         fscanf(in_file, "%s", filename);
         files[i] = fopen(filename, "r");
@@ -164,7 +161,7 @@ int main() {
         }
     }
     fclose(in_file);
-
+    // Try to open the outfile. If it doesn't open free all files and return an error.
     FILE *out_file = fopen("out.dat", "w");
     if (!out_file) {
         printf("Error opening out.dat\n");
@@ -177,6 +174,7 @@ int main() {
 
     minHeapInit(malloc(file_count * sizeof(Item)), file_count, file_count);
 
+    // Read in the strings create a map
     for (int i = 0; i < file_count; i++) {
         char *str = readNextString(files[i]);
         if (str) {
@@ -188,20 +186,23 @@ int main() {
 
     char *string_prev = NULL;
     int count = 0;
-
+    
     while (!minHeapEmpty()) {
         int index = heapExtractMin();
+        // Compare the previous string with the current string 
         if (string_prev == NULL || strcmp(a[index].str, string_prev) != 0) {
             if (string_prev != NULL) {
+                // Print the string to the output file
                 fprintf(out_file, "%s %d\n", string_prev, count);
                 free(string_prev);
             }
+            // Copy the current string to string_prev
             string_prev = strdup(a[index].str);
             count = 1;
         } else {
             count++;
         }
-
+        // Read in the next string and add it to the heap
         char *nextStr = readNextString(files[a[index].fileIndex]);
         if (nextStr) {
             free(a[index].str);
@@ -209,12 +210,13 @@ int main() {
             minHeapInsert(index);
         }
     }
-
+    // Print the string to the output file
     if (string_prev != NULL) {
         fprintf(out_file, "%s %d\n", string_prev, count);
         free(string_prev);
     }
 
+    // Close all files
     for (int i = 0; i < file_count; i++) {
         fclose(files[i]);
     }
