@@ -1,6 +1,6 @@
 // Ethan Johnson
 // ID: 1002008374
-// gcc
+// gcc lab2.c -std=c99
 
 // The following heap sort code has been changed to 
 // support minheaps instead of maxheaps. So the names
@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define _POSIX_C_SOURCE 200809L
 #define MAX_STRING_LENGTH 50
 
 // Struct for the string map
@@ -35,6 +36,17 @@ int N,          // Number of items in queue
 Item *a;
 FILE **files;
 int file_count;
+
+// Implementation of strdup because C99 does not have it
+char *strdup(const char *str) {
+    size_t len = strlen(str) + 1;      // Calculate the length of the string
+    char *dup = malloc(len);           // Allocate memory for the new string
+    if (dup == NULL) {
+        return NULL;                   // Handle memory allocation failure
+    }
+    strcpy(dup, str);                  // Copy the original string to the new memory
+    return dup;                        // Return the duplicated string
+}
 
 int parent(int i) {
     return i / 2;
