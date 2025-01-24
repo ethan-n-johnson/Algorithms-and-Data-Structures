@@ -1,6 +1,6 @@
 // Ethan Johnson
-// ID: 1002008374
 // gcc lab1.c -std=c99
+
 #include <stdio.h>
 #include <stdlib.h>
 

@@ -1,5 +1,4 @@
 // Ethan Johnson
-// ID: 1002008374
 // gcc lab2.c -std=c99
 
 // The following heap sort code has been changed to 
